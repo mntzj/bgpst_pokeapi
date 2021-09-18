@@ -44,7 +44,46 @@ catch_pokemon("charmander") %>% str()
 ```{r team rocket hold up}
 pokenets <- map(pokemons_tibble$name, catch_pokemon)
 names(pokenets) <- pokemons_tibble$name
+#These are our pokemons
 ```
-#todo : scrape berries data and perform PCA and or Lin Reg
+
+```{r tidy data, message = FALSE}
+str(pokenets, max.level = 1)
+
+
+stats_names <- pluck(pokenets,1,"stats","stat.name")
+
+extract_basestats <- function(pokerow) {
+  pluck(pokenets,pokerow,"stats","base_stat") %>%
+    as.double() %>%
+    set_names(nm = stats_names)
+}
+
+extract_type <- function(pokerow) {
+  pluck(pokenets, pokerow, "types", "type.name") %>%
+    paste() 
+  }
+
+pokenets_tbl <- tibble(pokenets) %>%
+  unnest_wider(pokenets) %>%
+  select(name, height, weight) %>%
+  mutate(pokedata = map(row_number(),extract_basestats)) %>%
+  unnest_wider(pokedata) %>%
+  mutate(poketype = map(row_number(),extract_type)) %>%
+  unnest_wider(poketype)
+
+```
+```{r}
+library(corrr)
+
+pokenets_tbl %>%
+  select(height:speed) %>%
+  correlate() %>%
+  rearrange() %>%
+  shave() %>%
+  rplot(shape = 15, colours = c("darkorange", "white", "darkcyan"))
+```
+
+#todo :  perform PCA and or Lin Reg
 
 
