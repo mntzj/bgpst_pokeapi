@@ -1,0 +1,50 @@
+---
+title: "PCA on Pokemon Data"
+output: html_notebook
+---
+
+
+
+```{r load em all}
+library(httr, quietly = TRUE, warn.conflicts = FALSE)
+library(jsonlite, quietly = TRUE, warn.conflicts = FALSE)
+library(tidyverse, quietly = TRUE, warn.conflicts = FALSE)
+```
+
+```{r api}
+poke_base <- "https://pokeapi.co/api/v2/"
+pokemon_endpoint <- "pokemon"
+records_limit <- "/?limit=200"
+call <- paste0(poke_base,pokemon_endpoint,records_limit)
+```
+
+```{r request}
+catch_em_all <- httr::GET(url = call)
+catch_em_all$status_code
+response_content <- httr::content(catch_em_all, as = "text")
+```
+
+```{r serialize}
+pokemons_json <- jsonlite::fromJSON(response_content, flatten = TRUE)
+pokemons_tibble <- as_tibble(pokemons_json$results)
+```
+
+```{r first catch}
+catch_pokemon <- function(pokemon, poketable=pokemons_tibble)
+{
+  .poke_url = poketable[match(pokemon, poketable$name), 2] %>% pull()
+  .catch = httr::GET(url = .poke_url)
+  .content = httr::content(.catch, as = "text")
+  return(jsonlite::fromJSON(.content, flatten = TRUE))
+}
+
+catch_pokemon("charmander") %>% str()
+```
+
+```{r team rocket hold up}
+pokenets <- map(pokemons_tibble$name, catch_pokemon)
+names(pokenets) <- pokemons_tibble$name
+```
+#todo : scrape berries data and perform PCA and or Lin Reg
+
+
